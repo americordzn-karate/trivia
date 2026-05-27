@@ -1,1 +1,401 @@
-trivia
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>TRIVIA DEL DÍA</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
+}
+
+body{
+    background:#101010;
+    color:white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    padding:20px;
+}
+
+.container{
+    width:100%;
+    max-width:700px;
+    background:#1a1a1a;
+    border-radius:20px;
+    padding:30px;
+    border:1px solid #333;
+}
+
+h1{
+    text-align:center;
+    color:#f7c600;
+    margin-bottom:25px;
+}
+
+.info{
+    margin-bottom:20px;
+    background:#121212;
+    padding:15px;
+    border-radius:12px;
+    border:1px solid #2f2f2f;
+}
+
+.question{
+    font-size:24px;
+    margin-bottom:25px;
+    line-height:1.4;
+}
+
+.options{
+    display:flex;
+    flex-direction:column;
+    gap:15px;
+}
+
+.option-btn{
+    background:#222;
+    border:none;
+    color:white;
+    padding:15px;
+    border-radius:12px;
+    cursor:pointer;
+    font-size:16px;
+    transition:0.3s;
+    text-align:left;
+}
+
+.option-btn:hover{
+    background:#333;
+}
+
+.option-btn:disabled{
+    opacity:0.7;
+    cursor:not-allowed;
+}
+
+.start-btn,
+.portal-btn{
+    width:100%;
+    padding:15px;
+    border:none;
+    border-radius:12px;
+    font-size:18px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.start-btn{
+    background:#f7c600;
+    color:black;
+    margin-bottom:20px;
+}
+
+.start-btn:disabled{
+    background:#555;
+    color:#999;
+    cursor:not-allowed;
+}
+
+.portal-btn{
+    background:#00c853;
+    color:white;
+    margin-top:20px;
+    display:none;
+}
+
+.result{
+    margin-top:25px;
+    text-align:center;
+    font-size:24px;
+    font-weight:bold;
+}
+
+.hidden{
+    display:none;
+}
+
+.status{
+    text-align:center;
+    margin-bottom:20px;
+    color:#ccc;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>TRIVIA DEL DÍA</h1>
+
+    <div class="info">
+        <div><strong>Alumno:</strong> <span id="nombreAlumno"></span></div>
+        <div><strong>Edad:</strong> <span id="edadAlumno"></span></div>
+    </div>
+
+    <div class="status" id="statusIntentos">
+        Verificando intentos disponibles...
+    </div>
+
+    <button class="start-btn" id="btnIniciar" disabled>
+        INICIAR
+    </button>
+
+    <div id="gameArea" class="hidden">
+
+        <div class="question" id="question"></div>
+
+        <div class="options" id="options"></div>
+
+    </div>
+
+    <div class="result" id="resultado"></div>
+
+    <button class="portal-btn" id="btnPortal">
+        REGRESAR AL PORTAL
+    </button>
+
+</div>
+
+<script>
+
+const API_URL = "https://script.google.com/macros/s/AKfycbwX5w8iiwkJVbGtpz-5f20U9jue2MC0vouE3blkHXo9CIMqg9bvCZrAYE8WKxH4gXGWzg/exec";
+
+const preguntas = [
+
+{
+pregunta:"¿Quién fue el fundador del estilo Shito-Ryu?",
+opciones:["Kenshi Motubi","Keisho Maduni","Kenwa Mabuni","Bad Bunny"],
+correcta:2
+},
+
+{
+pregunta:"¿De dónde es originario el Karate?",
+opciones:["Japón","Reynosa","McAllen","China"],
+correcta:0
+},
+
+{
+pregunta:"¿Quién fue un maestro de Kenwa Mabuni?",
+opciones:["Hiraganna","Anko Itosu","Bruce Lee","Chuck Norris"],
+correcta:1
+},
+
+{
+pregunta:"¿Cuál es el nombre del director de la Academia Senshi-Kan?",
+opciones:["Américo Ramírez","Benito Juárez","Américo Rodríguez","Américo Villarreal"],
+correcta:2
+},
+
+{
+pregunta:"¿Qué palabra en japonés hace referencia a una técnica de pierna?",
+opciones:["Keri","Meri","Weri","Geri"],
+correcta:0
+},
+
+{
+pregunta:"¿Qué significa 'kiken'?",
+opciones:["Ausente","Ganador","Rojo","Empate"],
+correcta:0
+},
+
+{
+pregunta:"¿Cómo se escribe 'negro' en japonés?",
+opciones:["Obi","Kuro","Ao","Tsuki"],
+correcta:1
+},
+
+{
+pregunta:"Tu sensei es:",
+opciones:["El mejor","Buena onda","Un genio","Todas las anteriores"],
+correcta:3
+},
+
+{
+pregunta:"El estilo de karate que practicamos en Senshi-Kan es:",
+opciones:["Shoto-Kan","Goju-Ryu","Shito-Ryu","KungFu"],
+correcta:2
+},
+
+{
+pregunta:"¿Qué significa 'Senshi'?",
+opciones:["Karateka","Fuerza","Dragón","Guerrero"],
+correcta:3
+}
+
+];
+
+const params = new URLSearchParams(window.location.search);
+
+const nombre = params.get("nombre") || "";
+const edad = params.get("edad") || "";
+const reto = params.get("reto") || "TRIVIA";
+const estatura = params.get("estatura") || "";
+const peso = params.get("peso") || "";
+
+document.getElementById("nombreAlumno").innerText = nombre;
+document.getElementById("edadAlumno").innerText = edad;
+
+let preguntaActual = null;
+let puntosFinales = 0;
+
+async function verificarIntentos(){
+
+    try{
+
+        const response = await fetch(API_URL);
+        const data = await response.json();
+
+        const intentosHoy = data.intentosHoy || {};
+        const retos = data.retos || [];
+
+        const retoTrivia = retos.find(r =>
+            r.nombre.toUpperCase() === "TRIVIA"
+        );
+
+        let limite = 1;
+
+        if(retoTrivia && retoTrivia.diario_permitido){
+            limite = parseInt(retoTrivia.diario_permitido);
+        }
+
+        const hash = `${nombre}_TRIVIA`;
+
+        const usados = intentosHoy[hash] || 0;
+
+        if(usados >= limite){
+
+            document.getElementById("statusIntentos").innerHTML =
+                "Ya alcanzaste el límite diario de intentos.";
+
+            document.getElementById("btnIniciar").disabled = true;
+
+        }else{
+
+            document.getElementById("statusIntentos").innerHTML =
+                `Intentos disponibles: ${limite - usados}`;
+
+            document.getElementById("btnIniciar").disabled = false;
+        }
+
+    }catch(error){
+
+        console.error(error);
+
+        document.getElementById("statusIntentos").innerHTML =
+            "Error al verificar intentos.";
+    }
+}
+
+function iniciarJuego(){
+
+    document.getElementById("btnIniciar").style.display = "none";
+
+    document.getElementById("gameArea").classList.remove("hidden");
+
+    preguntaActual = preguntas[Math.floor(Math.random() * preguntas.length)];
+
+    document.getElementById("question").innerText =
+        preguntaActual.pregunta;
+
+    const optionsContainer = document.getElementById("options");
+
+    optionsContainer.innerHTML = "";
+
+    preguntaActual.opciones.forEach((opcion,index)=>{
+
+        const btn = document.createElement("button");
+
+        btn.className = "option-btn";
+
+        btn.innerText = opcion;
+
+        btn.onclick = ()=> responder(index);
+
+        optionsContainer.appendChild(btn);
+
+    });
+}
+
+async function responder(index){
+
+    const botones = document.querySelectorAll(".option-btn");
+
+    botones.forEach(btn=> btn.disabled = true);
+
+    const correcta = preguntaActual.correcta;
+
+    if(index === correcta){
+
+        puntosFinales = 10;
+
+        document.getElementById("resultado").innerHTML =
+            "✅ RESPUESTA CORRECTA<br>+10 puntos";
+
+    }else{
+
+        puntosFinales = -10;
+
+        document.getElementById("resultado").innerHTML =
+            "❌ RESPUESTA INCORRECTA<br>-10 puntos";
+    }
+
+    try{
+
+        const body = {
+            nombre_alumno: nombre,
+            nombre_reto: "TRIVIA",
+            puntos: puntosFinales
+        };
+
+        await fetch(API_URL,{
+            method:"POST",
+            headers:{
+                "Content-Type":"text/plain;charset=utf-8"
+            },
+            body:JSON.stringify(body)
+        });
+
+    }catch(error){
+
+        console.error(error);
+    }
+
+    document.getElementById("btnPortal").style.display = "block";
+}
+
+function regresarPortal(){
+
+    const url =
+        "https://americordzn-karate.github.io/retos/" +
+        `?nombre=${encodeURIComponent(nombre)}` +
+        `&edad=${encodeURIComponent(edad)}` +
+        `&reto=${encodeURIComponent(reto)}` +
+        `&estatura=${encodeURIComponent(estatura)}` +
+        `&peso=${encodeURIComponent(peso)}`;
+
+    window.location.href = url;
+}
+
+document.getElementById("btnIniciar")
+.addEventListener("click", iniciarJuego);
+
+document.getElementById("btnPortal")
+.addEventListener("click", regresarPortal);
+
+verificarIntentos();
+
+</script>
+
+</body>
+</html>
